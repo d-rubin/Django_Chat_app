@@ -1,0 +1,126 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+<style>
+  .page-content {
+    width: 50%;
+    height: calc(100% - 200px);
+    padding: 100px 25%;
+  }
+
+  .color-grey {
+    color: rgba(0, 0, 0, 0.4)
+  }
+
+  .color-red {
+      color: lightcoral;
+  }
+
+  #messageContainer {
+    max-height: 400px;
+    overflow-y: scroll;
+  }
+</style>
+
+<!-- Always shows a header, even in smaller screens. -->
+<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+  <header class="mdl-layout__header">
+    <div class="mdl-layout__header-row">
+      <!-- Title -->
+      <span class="mdl-layout-title">
+        {% if request.user.is_authenticated %}
+          Welcome, {{ request.user.first_name }}
+        {% else %}
+          Welcome, Visitor
+        {% endif %}
+      </span>
+      <!-- Add spacer, to align navigation to the right -->
+<!--      <div class="mdl-layout-spacer"></div>-->
+<!--      &lt;!&ndash; Navigation. We hide it in small screens. &ndash;&gt;-->
+<!--      <nav class="mdl-navigation mdl-layout&#45;&#45;large-screen-only">-->
+<!--        <a class="mdl-navigation__link" href="">Link</a>-->
+<!--        <a class="mdl-navigation__link" href="">Link</a>-->
+<!--        <a class="mdl-navigation__link" href="">Link</a>-->
+<!--        <a class="mdl-navigation__link" href="">Link</a>-->
+<!--      </nav>-->
+    </div>
+  </header>
+<!--  <div class="mdl-layout__drawer">-->
+<!--    <span class="mdl-layout-title">Title</span>-->
+<!--    <nav class="mdl-navigation">-->
+<!--      <a class="mdl-navigation__link" href="">Link</a>-->
+<!--      <a class="mdl-navigation__link" href="">Link</a>-->
+<!--      <a class="mdl-navigation__link" href="">Link</a>-->
+<!--      <a class="mdl-navigation__link" href="">Link</a>-->
+<!--    </nav>-->
+<!--  </div>-->
+  <main class="mdl-layout__content">
+    <div class="page-content">
+        <!-- Your content goes here -->
+      {% if request.user.is_authenticated %}
+      <div id="messageContainer">
+        {% for message in messages %}
+        <div>
+          <span class="color-grey">[{{ message.created_at }}]</span> {{ message.author.first_name }}: {{ message.text }}
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <script>
+        async function sendMessage() {
+          let fd= new FormData();
+          let token = '{{ csrf_token }}';
+          let today = new Date();
+          let options = { month: "short", day: "numeric", year: "numeric" };
+          let dateString = today.toLocaleDateString("en-US", options);
+          fd.append('text', messageField.value);
+          fd.append('csrfmiddlewaretoken', token);
+          try {
+            messageContainer.innerHTML +=  `
+              <div id='deleteMessage' class="color-red">
+                <span class="color-red">[${dateString}]</span>
+                {{ request.user.first_name }}:
+                <i class="color-red">${messageField.value}</i>
+              </div>`;
+            let response = await fetch('/chat/', {
+              method: 'POST',
+              body: fd
+            });
+            let json = await response.json();
+            let parsed = JSON.parse(json);
+            console.log(parsed);
+            document.getElementById('deleteMessage').remove();
+            messageContainer.innerHTML +=  `
+              <div>
+                <span class="color-grey">[${parsed.fields.created_at}]</span>
+                {{ parsed.author }}:
+                ${messageField.value}
+              </div>`;
+          } catch(e) {
+            console.error('An error occurred', e);
+          }
+          messageField.value = '';
+        }
+      </script>
+
+      <!-- Textfield with Floating Label -->
+      <form onsubmit="sendMessage(); return false;" method="post">
+        {% csrf_token %}
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" name="text" type="text" id="messageField">
+          <label class="mdl-textfield__label" for="messageField">Text...</label>
+        </div>
+          <!-- Accent-colored raised button with ripple -->
+          <button type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+            Send
+          </button>
+      </form>
+      {% else %}
+        <h1>You are not logged in</h1>
+        <p>Please login <a href="/login">here.</a></p>
+      {% endif %}
+    </div>
+  </main>
+</div>
