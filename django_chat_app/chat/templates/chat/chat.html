@@ -5,8 +5,8 @@
 <style>
   .page-content {
     width: 50%;
-    height: calc(100% - 200px);
-    padding: 100px 25%;
+    height: 100%;
+    padding: 0 25%;
   }
 
   .color-grey {
@@ -17,11 +17,73 @@
       color: lightcoral;
   }
 
+  .link {
+    text-decoration: none;
+    color: white;
+    font-size: 20px;
+  }
+
+  .link:hover {
+    text-decoration: underline;
+  }
+
   #messageContainer {
-    max-height: 400px;
+    max-height: 80%;
     overflow-y: scroll;
+    scroll-behavior: smooth;
+  }
+
+  .mdl-layout__header-row {
+    justify-content: space-between;
+  }
+
+  .mdl-textfield {
+    width: 100%;
   }
 </style>
+<script>
+setTimeout(() => {
+  const container = document.getElementById('messageContainer');
+  container.scrollTop = container.scrollHeight;
+},500)
+
+async function sendMessage() {
+  const container = document.getElementById('messageContainer');
+  let fd= new FormData();
+  let token = '{{ csrf_token }}';
+  let today = new Date();
+  let options = { month: "short", day: "numeric", year: "numeric" };
+  let dateString = today.toLocaleDateString("en-US", options);
+  fd.append('text', messageField.value);
+  fd.append('csrfmiddlewaretoken', token);
+  try {
+    messageContainer.innerHTML +=  `
+      <div id='deleteMessage' class="color-red">
+        <span class="color-red">[${dateString}]</span>
+        {{ request.user.first_name }}:
+        <i class="color-red">${messageField.value}</i>
+      </div>`;
+    let response = await fetch('/chat/', {
+      method: 'POST',
+      body: fd
+    });
+    let json = await response.json();
+    let parsed = JSON.parse(json);
+    document.getElementById('deleteMessage').remove();
+    messageContainer.innerHTML +=  `
+      <div>
+        <span class="color-grey">[${parsed.fields.created_at}]</span>
+        {{ parsed.author }}:
+        ${messageField.value}
+      </div>`;
+  } catch(e) {
+    console.error('An error occurred', e);
+  }
+  messageField.value = '';
+  container.scrollTop = container.scrollHeight;
+
+}
+</script>
 
 <!-- Always shows a header, even in smaller screens. -->
 <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
@@ -35,6 +97,8 @@
           Welcome, Visitor
         {% endif %}
       </span>
+
+      <a class="link" href="{% url 'logout' %}">Logout</a>
       <!-- Add spacer, to align navigation to the right -->
 <!--      <div class="mdl-layout-spacer"></div>-->
 <!--      &lt;!&ndash; Navigation. We hide it in small screens. &ndash;&gt;-->
@@ -67,43 +131,6 @@
         {% endfor %}
 
       </div>
-
-      <script>
-        async function sendMessage() {
-          let fd= new FormData();
-          let token = '{{ csrf_token }}';
-          let today = new Date();
-          let options = { month: "short", day: "numeric", year: "numeric" };
-          let dateString = today.toLocaleDateString("en-US", options);
-          fd.append('text', messageField.value);
-          fd.append('csrfmiddlewaretoken', token);
-          try {
-            messageContainer.innerHTML +=  `
-              <div id='deleteMessage' class="color-red">
-                <span class="color-red">[${dateString}]</span>
-                {{ request.user.first_name }}:
-                <i class="color-red">${messageField.value}</i>
-              </div>`;
-            let response = await fetch('/chat/', {
-              method: 'POST',
-              body: fd
-            });
-            let json = await response.json();
-            let parsed = JSON.parse(json);
-            console.log(parsed);
-            document.getElementById('deleteMessage').remove();
-            messageContainer.innerHTML +=  `
-              <div>
-                <span class="color-grey">[${parsed.fields.created_at}]</span>
-                {{ parsed.author }}:
-                ${messageField.value}
-              </div>`;
-          } catch(e) {
-            console.error('An error occurred', e);
-          }
-          messageField.value = '';
-        }
-      </script>
 
       <!-- Textfield with Floating Label -->
       <form onsubmit="sendMessage(); return false;" method="post">

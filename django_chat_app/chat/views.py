@@ -5,6 +5,7 @@ from .models import Chat, Message
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.core import serializers
+from django.contrib.auth.models import User
 
 
 @login_required(login_url='/login/')
@@ -45,27 +46,19 @@ def login_view(request):
 
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            user.first_name = form.cleaned_data.get('first_name')
-            user.last_name = form.cleaned_data.get('last_name')
-            user.email = form.cleaned_data.get('email')
-            user.save()
-            user = authenticate(
-                username=form.cleaned_data.get('username'),
-                password=form.cleaned_data.get('password'),
-            )
-            login(request, user)
-            return redirect('/chat/')
+        user = User.objects.create_user(
+            username=request.POST.get('username'),
+            password=request.POST.get('password'),
+            email=request.POST.get('email'),
+            first_name=request.POST.get('first_name'),
+            last_name=request.POST.get('last_name')
+        )
+        user.save()
+        login(request, user)
+        return redirect('/chat/')
     else:
-        form = UserCreationForm()
-
-    return render(request, 'chat/signUp.html', {'form': form})
+        return render(request, 'chat/signUp.html')
 
 
-
-
-
-def logout(request):
-    pass
+def logout_view(request):
+    logout(request)
