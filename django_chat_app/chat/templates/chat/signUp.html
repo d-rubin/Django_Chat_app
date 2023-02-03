@@ -36,6 +36,9 @@
             <input name="email" type="email" class="form-control rounded-3" id="floatingEmail" placeholder="Email address">
             <label for="floatingEmail">Email address</label>
           </div>
+          {% if valid == False %}
+            <p>Your inputs are not safe enough</p>
+          {% endif %}
           <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">Sign up</button>
           <small class="text-muted">Click <a href="/login/">here</a> to Log in.</small><br>
           <small class="text-muted">By clicking Sign up, you agree to the terms of use.</small>

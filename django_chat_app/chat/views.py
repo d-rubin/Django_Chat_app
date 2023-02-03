@@ -26,37 +26,45 @@ def chat_view(request):
 
 
 def login_view(request):
-    redirect = request.GET['next']
+    redirect_to = request.GET.get('next', '/chat/')
     if request.method == 'POST':
-        user = authenticate(request,
-                            username=request.POST['username'],
-                            password=request.POST['password'])
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect(request.POST[redirect])
+            return redirect(redirect_to)
         else:
-            return render(request, 'chat/login.html', {'error': 'Invalid Login Credentials',
-                                                       'wrong_password': True,
-                                                       'redirect': redirect})
-    return render(request, 'chat/login.html', {'redirect': redirect})
+            return render(request, 'chat/login.html', {
+                'error': 'Invalid Login Credentials',
+                'wrong_password': True,
+                'redirect': redirect_to
+            })
+    return render(request, 'chat/login.html', {'redirect': redirect_to})
 
 
 def register_view(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            user.first_name = form.cleaned_data.get('first_name')
+            user.last_name = form.cleaned_data.get('last_name')
+            user.email = form.cleaned_data.get('email')
+            user.save()
             user = authenticate(
                 username=form.cleaned_data.get('username'),
                 password=form.cleaned_data.get('password'),
-                first_name=form.cleaned_data.get('first_name'),
-                last_name=form.cleaned_data.get('last_name'),
-                email=form.cleaned_data.get('email'),
             )
             login(request, user)
             return redirect('/chat/')
     else:
-        return render(request, 'chat/signUp.html')
+        form = UserCreationForm()
+
+    return render(request, 'chat/signUp.html', {'form': form})
+
+
+
 
 
 def logout(request):
